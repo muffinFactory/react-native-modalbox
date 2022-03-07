@@ -14,7 +14,7 @@ import {
   Keyboard
 } from 'react-native';
 
-const {height: SCREEN_HEIGHT, width: SCREEN_WIDTH} = Dimensions.get('window');
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: 'white'
@@ -52,6 +52,8 @@ export default class ModalBox extends React.PureComponent {
     easing: PropTypes.func,
     coverScreen: PropTypes.bool,
     keyboardTopOffset: PropTypes.number,
+    hideKeyboardOffset: PropTypes.bool,
+    hideKeyboardChange: PropTypes.bool,
     onClosed: PropTypes.func,
     onOpened: PropTypes.func,
     onClosingState: PropTypes.func
@@ -72,6 +74,8 @@ export default class ModalBox extends React.PureComponent {
     easing: Easing.elastic(0.8),
     coverScreen: false,
     keyboardTopOffset: Platform.OS == 'ios' ? 22 : 0,
+    hideKeyboardOffset: true,
+    hideKeyboardChange: true,
     useNativeDriver: true
   };
 
@@ -100,8 +104,8 @@ export default class ModalBox extends React.PureComponent {
     const position = props.startOpen
       ? new Animated.Value(0)
       : new Animated.Value(
-          props.entry === 'top' ? -SCREEN_HEIGHT : SCREEN_HEIGHT
-        );
+        props.entry === 'top' ? -SCREEN_HEIGHT : SCREEN_HEIGHT
+      );
     this.state = {
       position,
       backdropOpacity: new Animated.Value(0),
@@ -160,21 +164,25 @@ export default class ModalBox extends React.PureComponent {
    * The keyboard is hidden (IOS only)
    */
   onKeyboardHide(evt) {
-    this.setState({keyboardOffset: 0});
+    if (!this.props.hideKeyboardOffset)
+      this.setState({ keyboardOffset: 0 });
   }
 
   /*
    * The keyboard frame changed, used to detect when the keyboard open, faster than keyboardDidShow (IOS only)
    */
   onKeyboardChange(evt) {
-    if (!evt) return;
-    if (!this.state.isOpen) return;
-    const keyboardFrame = evt.endCoordinates;
-    const keyboardHeight = this.state.containerHeight - keyboardFrame.screenY;
+    if (!this.props.hideKeyboardChange) {
+      if (!evt) return;
+      if (!this.state.isOpen) return;
+      const keyboardFrame = evt.endCoordinates;
+      const keyboardHeight = this.state.containerHeight - keyboardFrame.screenY;
 
-    this.setState({keyboardOffset: keyboardHeight}, () => {
-      this.animateOpen();
-    });
+      this.setState({ keyboardOffset: keyboardHeight }, () => {
+        this.animateOpen();
+      });
+    }
+
   }
 
   /*
@@ -184,7 +192,7 @@ export default class ModalBox extends React.PureComponent {
     if (this.state.isAnimateBackdrop && this.state.animBackdrop) {
       this.state.animBackdrop.stop();
     }
-    this.setState({isAnimateBackdrop: true});
+    this.setState({ isAnimateBackdrop: true });
 
     let animBackdrop = Animated.timing(this.state.backdropOpacity, {
       toValue: 1,
@@ -206,7 +214,7 @@ export default class ModalBox extends React.PureComponent {
     if (this.state.isAnimateBackdrop && this.state.animBackdrop) {
       this.state.animBackdrop.stop();
     }
-    this.setState({isAnimateBackdrop: true});
+    this.setState({ isAnimateBackdrop: true });
 
     let animBackdrop = Animated.timing(this.state.backdropOpacity, {
       toValue: 0,
@@ -227,7 +235,7 @@ export default class ModalBox extends React.PureComponent {
   stopAnimateOpen() {
     if (this.state.isAnimateOpen) {
       if (this.state.animOpen) this.state.animOpen.stop();
-      this.setState({isAnimateOpen: false});
+      this.setState({ isAnimateOpen: false });
     }
   }
 
@@ -282,7 +290,7 @@ export default class ModalBox extends React.PureComponent {
   stopAnimateClose() {
     if (this.state.isAnimateClose) {
       if (this.state.animClose) this.state.animClose.stop();
-      this.setState({isAnimateClose: false});
+      this.setState({ isAnimateClose: false });
     }
   }
 
@@ -354,7 +362,7 @@ export default class ModalBox extends React.PureComponent {
         this.props.isDisabled ||
         (this.props.swipeArea &&
           evt.nativeEvent.pageY - this.state.positionDest >
-            this.props.swipeArea)
+          this.props.swipeArea)
       ) {
         inSwipeArea = false;
         return false;
@@ -363,7 +371,7 @@ export default class ModalBox extends React.PureComponent {
       return true;
     };
 
-    const animEvt = Animated.event([null, {customY: position}], {useNativeDriver: false});
+    const animEvt = Animated.event([null, { customY: position }], { useNativeDriver: false });
 
     const onPanMove = (evt, state) => {
       const newClosingState =
@@ -429,7 +437,7 @@ export default class ModalBox extends React.PureComponent {
       height == this.state.containerHeight &&
       width == this.state.containerWidth
     ) {
-      this.setState({isInitialized: true});
+      this.setState({ isInitialized: true });
       return;
     }
 
@@ -457,7 +465,7 @@ export default class ModalBox extends React.PureComponent {
           onPress={this.props.backdropPressToClose ? this.close : null}>
           <Animated.View
             importantForAccessibility="no"
-            style={[styles.absolute, {opacity: this.state.backdropOpacity}]}>
+            style={[styles.absolute, { opacity: this.state.backdropOpacity }]}>
             <View
               style={[
                 styles.absolute,
@@ -492,8 +500,8 @@ export default class ModalBox extends React.PureComponent {
           this.props.style,
           {
             transform: [
-              {translateY: this.state.position},
-              {translateX: offsetX}
+              { translateY: this.state.position },
+              { translateX: offsetX }
             ]
           }
         ]}
@@ -521,7 +529,7 @@ export default class ModalBox extends React.PureComponent {
         style={[styles.transparent, styles.absolute]}
         pointerEvents={'box-none'}>
         <View
-          style={{flex: 1}}
+          style={{ flex: 1 }}
           pointerEvents={'box-none'}
           onLayout={this.onContainerLayout}>
           {visible && this.renderBackdrop()}
@@ -566,7 +574,7 @@ export default class ModalBox extends React.PureComponent {
           BackHandler.addEventListener('hardwareBackPress', this.onBackPress);
         this.onViewLayoutCalculated = null;
       };
-      this.setState({isAnimateOpen: true});
+      this.setState({ isAnimateOpen: true });
     }
   }
 
